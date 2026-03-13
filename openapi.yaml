@@ -1,0 +1,308 @@
+openapi: 3.0.0
+info:
+  title: Printyl Server API
+  description: REST API for the Printyl server setup.
+  version: 0.1.0
+  contact:
+    name: Gregor Gottschewski (Developer of Printyl server)
+    email: contact@gregors-computer-lab.com>
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+paths:
+  /health:
+    get:
+      summary: Get server health status
+      description: Returns the current health status of the server
+      operationId: getHealth
+      tags:
+        - Server
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerStatus'
+
+  /documents:
+    get:
+      summary: List all available documents
+      description: Returns a list of all available documents with forms on the server
+      operationId: listDocuments
+      tags:
+        - Documents
+      responses:
+        '200':
+          description: List of available documents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DocumentInfo'
+
+  /documents/{id}/form:
+    get:
+      summary: Get form schema for a document
+      description: Retrieves the form schema (fields and their types) for a specific document
+      operationId: getDocumentForm
+      tags:
+        - Documents
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The document ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Form schema retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentForm'
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /documents/{id}/generate:
+    post:
+      summary: Request PDF generation for a document
+      description: Submit form data and request generation of a PDF document
+      operationId: generateDocument
+      tags:
+        - Documents
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The document ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FormSubmission'
+      responses:
+        '200':
+          description: Document generation job created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateResponse'
+        '400':
+          description: Invalid request or form data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /status/{jobId}:
+    get:
+      summary: Get job status
+      description: Retrieves the current status of a PDF generation job
+      operationId: getJobStatus
+      tags:
+        - Jobs
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          description: The job ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Job status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobStatus'
+        '404':
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /file/{jobId}:
+    get:
+      summary: Download generated PDF file
+      description: Downloads the PDF file generated from a completed job
+      operationId: downloadFile
+      tags:
+        - Jobs
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          description: The job ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: PDF file retrieved successfully
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Job not completed or still processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    ServerStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "ok"
+        time:
+          type: string
+          format: date-time
+          example: "2025-02-22T15:30:45Z"
+
+    DocumentInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "template-1"
+        name:
+          type: string
+          example: "Minimal LaTeX Document"
+        description:
+          type: string
+          example: "A simple LaTeX template with text content"
+
+    FormField:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - string
+            - number
+          example: "string"
+        length:
+          type: integer
+          description: Maximum length (-1 for unlimited)
+          example: -1
+        multiline:
+          type: boolean
+          example: true
+
+    DocumentForm:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "template-1"
+        name:
+          type: string
+          example: "Minimal LaTeX Document"
+        description:
+          type: string
+          example: "A simple LaTeX template with text content"
+        fields:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/FormField'
+          example:
+            content-1:
+              type: string
+              length: -1
+              multiline: true
+
+    FormSubmission:
+      type: object
+      properties:
+        data:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            content-1: "This is my content for the PDF"
+
+    GenerateResponse:
+      type: object
+      properties:
+        jobId:
+          type: string
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        status:
+          type: string
+          enum:
+            - pending
+            - processing
+            - completed
+            - failed
+          example: "pending"
+
+    JobStatus:
+      type: object
+      properties:
+        jobId:
+          type: string
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        status:
+          type: string
+          enum:
+            - pending
+            - processing
+            - completed
+            - failed
+          example: "processing"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-02-22T15:30:45Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2025-02-22T15:30:50Z"
+        error:
+          type: string
+          description: Error message if job failed
+          example: null
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Document not found"
+
+tags:
+  - name: Server
+    description: Server health and status operations
+  - name: Documents
+    description: Document and form management operations
+  - name: Jobs
+    description: PDF generation job management operations
+
