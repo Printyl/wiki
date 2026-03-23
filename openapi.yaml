@@ -5,7 +5,7 @@ info:
   version: 0.1.0
   contact:
     name: Gregor Gottschewski (Developer of Printyl server)
-    email: contact@gregors-computer-lab.com>
+    email: contact@gregors-computer-lab.com
 servers:
   - url: http://localhost:8080
     description: Local development server
@@ -230,11 +230,11 @@ components:
           type: string
           example: "A simple LaTeX template with text content"
         fields:
-          type: object
-          additionalProperties:
+          type: array
+          items:
             $ref: '#/components/schemas/FormField'
           example:
-            content-1:
+            - name: content-1
               type: string
               length: -1
               multiline: true
@@ -243,11 +243,17 @@ components:
       type: object
       properties:
         data:
-          type: object
-          additionalProperties:
-            type: string
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              value:
+                type: string
           example:
-            content-1: "This is my content for the PDF"
+            - name: content-1
+              value: "This is the content of the document."
 
     GenerateResponse:
       type: object
@@ -305,4 +311,3 @@ tags:
     description: Document and form management operations
   - name: Jobs
     description: PDF generation job management operations
-
