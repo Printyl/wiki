@@ -234,7 +234,8 @@ components:
           items:
             $ref: '#/components/schemas/FormField'
           example:
-            - name: content-1
+            - name: Main Content
+              uuid: content-1
               type: string
               length: -1
               multiline: true
